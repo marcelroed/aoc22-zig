@@ -3,7 +3,7 @@ const std = @import("std");
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -15,6 +15,29 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // Find all solution files
+    // var files = std.ArrayList([]const u8).init(b.allocator);
+    // defer files.deinit();
+
+    // var dir = try std.fs.cwd().openIterableDir("src/solutions", .{});
+    // var it = dir.iterate();
+    // while (try it.next()) |file| {
+    //     if (file.kind != .file) continue; // Ignore subdirs
+    //     try files.append(b.dupe(split: {
+    //         var split = std.mem.splitScalar(u8, file.name, '.');
+    //         const num_string = split.next() orelse unreachable;
+    //         break :split num_string;
+    //     }));
+    // }
+
+    // var options = b.addOptions();
+    // options.addOption([]const []const u8, "files", files.items);
+
+    // const solutions = b.createModule(.{ .source_file = .{.path} });
+    // const module = b.createModule(
+    //     .{ .source_file = .{ .path = "src/solutions/01.zig" } },
+    // );
+
     const exe = b.addExecutable(.{
         .name = "aoc22-zig",
         // In this case the main source file is merely a path, however, in more
@@ -23,6 +46,15 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    // const input_module = b.createModule(.{ .source_file = .{ .path = "src/input.zig" } });
+    // const output_module = b.createModule(.{ .source_file = .{ .path = "src/output.zig" } });
+    // exe.addModule("input", input_module);
+    // exe.addModule("output", output_module);
+
+    // exe.addModule("sols", module);
+
+    // exe.addOptions("options", options);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
