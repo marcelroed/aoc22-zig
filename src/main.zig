@@ -1,15 +1,15 @@
 const std = @import("std");
 const output = @import("output.zig");
 const input = @import("input.zig");
+const solutions = @import("solutions.zig");
+
 const String = std.ArrayList(u8);
 const assert = std.debug.assert;
 
-const solutions = @import("solutions.zig");
-const sol01 = solutions.sol01;
+pub var problem_number: u32 = 0;
 
 fn getAllSolutions() []*const fn () anyerror!void {
     const decls = @typeInfo(solutions).Struct.decls;
-    // @compileLog(.{decls});
     const n_decls = decls.len;
 
     var funcArr: [n_decls]*const fn () anyerror!void = undefined;
@@ -22,14 +22,14 @@ fn getAllSolutions() []*const fn () anyerror!void {
 
 fn getSolution(solution_number: ?u32) *const fn () anyerror!void {
     const all_functions = comptime getAllSolutions();
-    const solnum = solution_number orelse all_functions.len;
+    const solnum: u32 = solution_number orelse all_functions.len;
+    output.print("Running solution number {}\n", .{solnum});
+    output.flush() catch unreachable;
+    problem_number = solnum;
     return all_functions[solnum - 1];
 }
 
 fn runSolution(solution_number: ?u32) !void {
-    output.print("Running solution number {?}\n", .{solution_number});
-    try output.flush();
-
     const solution_function = getSolution(solution_number);
     try solution_function();
 }
@@ -43,16 +43,7 @@ pub fn main() !void {
     else
         null;
 
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    // var inp = try input.readAll(gpa.allocator());
-    // defer inp.deinit();
-
     try runSolution(solution_number);
-
-    // output.print("Testing {s}\n", .{inp.items});
-    // output.print("Args were: {s}\n", .{std.os.argv[1]});
-
-    // try output.flush();
 }
 
 test "simple test" {
