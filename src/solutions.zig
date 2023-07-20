@@ -1,3 +1,9 @@
 pub const sol01 = @import("solutions/01.zig");
 pub const sol02 = @import("solutions/02.zig");
 pub const sol03 = @import("solutions/03.zig");
+pub const sol04 = @import("solutions/04.zig");
+pub const sol05 = @import("solutions/05.zig");
+pub const sol06 = @import("solutions/06.zig");
+pub const sol07 = @import("solutions/07.zig");
+pub const sol08 = @import("solutions/08.zig");
+pub const sol09 = @import("solutions/09.zig");
