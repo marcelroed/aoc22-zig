@@ -11,3 +11,21 @@ pub fn print(comptime format: []const u8, args: anytype) void {
 pub fn flush() !void {
     try stdout_bw.flush();
 }
+
+fn printPart(solution: anytype, part: i32) void {
+    const specifier = comptime switch (@typeInfo(@TypeOf(solution))) {
+        .Array => "s",
+        .Optional => "any",
+        else => "",
+    };
+    print("Part {}: {" ++ specifier ++ "}\n", .{ part, solution });
+    flush() catch unreachable;
+}
+
+pub fn part1(solution: anytype) void {
+    printPart(solution, 1);
+}
+
+pub fn part2(solution: anytype) void {
+    printPart(solution, 2);
+}
