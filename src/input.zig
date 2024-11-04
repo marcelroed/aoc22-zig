@@ -47,7 +47,7 @@ fn getFileOrStdin() !FileBrType.Reader {
         var isatty: ?bool = null;
     };
     if (StaticState.isatty == null) {
-        StaticState.isatty = std.os.isatty(0);
+        StaticState.isatty = std.io.getStdIn().isTty();
         if (StaticState.isatty.?) { // No input given through stdin
             var buf = std.mem.zeroes([100:0]u8);
             const problem_number = @import("main.zig").problem_number;
@@ -140,12 +140,12 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
         //         }
         //     }.parse;
         // },
-        .Float => struct {
+        .float => struct {
             fn parseFunc(buf: []const u8) Ret {
                 return std.fmt.parseFloat(parse_type, buf);
             }
         }.parseFunc,
-        .Int => |t| struct {
+        .int => |t| struct {
             fn parseFunc(buf: []const u8) Ret {
                 const base_func = comptime switch (t.signedness) {
                     .signed => std.fmt.parseInt,
@@ -154,7 +154,7 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
                 return base_func(parse_type, buf, 10);
             }
         }.parseFunc,
-        .Bool => struct {
+        .bool => struct {
             fn parseFunc(buf: []const u8) Ret {
                 if (eqlCaseInsensitive(buf, "true") or std.mem.eql(u8, buf, "1")) {
                     return true;
@@ -165,12 +165,12 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
                 return ParseError.InvalidCharacter;
             }
         }.parseFunc,
-        .Array => { // String or array
+        .array => { // String or array
             return struct {
                 fn parseFunc(buf: []const u8) Ret {
-                    if (parse_type_struct.Array.sentinel == null) {
+                    if (parse_type_struct.array.sentinel == null) {
                         var result: parse_type = undefined;
-                        if (buf.len != parse_type_struct.Array.len) {
+                        if (buf.len != parse_type_struct.array.len) {
                             return error.SizeMismatch;
                         }
                         @memcpy(&result, buf);
@@ -183,7 +183,7 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
                 }
             }.parseFunc;
         },
-        .Enum => |en| {
+        .@"enum" => |en| {
             return struct {
                 fn parseFunc(buf: []const u8) Ret {
                     inline for (en.fields) |field| {
@@ -196,7 +196,7 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
                 }
             }.parseFunc;
         },
-        .Union => |un| {
+        .@"union" => |un| {
             return struct {
                 fn parseFunc(buf: []const u8) Ret {
                     var it = std.mem.splitScalar(u8, buf, ' ');
@@ -214,7 +214,7 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
                 }
             }.parseFunc;
         },
-        .Optional => |optional| {
+        .optional => |optional| {
             const childParseFunction = getParseFunction(optional.child);
             const optionalParseFunction = struct {
                 fn parseFunc(buf: []const u8) Ret {
@@ -248,7 +248,7 @@ fn getParseFunction(comptime parse_type: type) fn ([]const u8) ParseError!parse_
 
 pub fn readAll(alloc: std.mem.Allocator) !std.ArrayList(u8) {
     _ = alloc;
-    var buffer = std.ArrayList(u8).init(allocator);
+    const buffer = std.ArrayList(u8).init(allocator);
     // const reader = std.io.getStdIn().reader();
     // try stdin_reader.readAllArrayList(&buffer, 100000);
     return buffer;
@@ -257,7 +257,7 @@ pub fn readAll(alloc: std.mem.Allocator) !std.ArrayList(u8) {
 fn parseLineAsArray(comptime arr_type: type, line: []const u8) !arr_type {
     const type_info: std.builtin.Type = @typeInfo(arr_type);
     switch (type_info) {
-        .Array => |arr| {
+        .array => |arr| {
             const T = arr.child;
             const len = arr.len;
 
@@ -313,6 +313,7 @@ fn ParseInfo(comptime T: type) type {
 }
 fn validateParseStruct(comptime T: type) !ParseInfo(T) {
     const decls = comptime std.meta.declarations(T);
+    // @compileLog(.{@typeInfo(T).Struct});
     const valid_decls = [_][]const u8{ "delimiter", "indices" };
     inline for (decls) |decl| {
         comptime var valid = false;
@@ -328,11 +329,12 @@ fn validateParseStruct(comptime T: type) !ParseInfo(T) {
             // std.log.err("Declaration {s} is not in the set of valid declarations", .{decl.name});
             // return ParseError.InvalidDecl;
         }
-        if (!decl.is_pub) {
-            @compileError("Declaration " ++ decl.name ++ " must be public");
-            // std.log.err("Declaration {s} must be public", .{decl.name});
-            // return ParseError.InvalidDecl;
-        }
+        // @compileLog(.{decl});
+        // if (!decl.is_pub) {
+        //     @compileError("Declaration " ++ decl.name ++ " must be public");
+        //     // std.log.err("Declaration {s} must be public", .{decl.name});
+        //     // return ParseError.InvalidDecl;
+        // }
     }
     const delimiter = if (@hasDecl(T, "delimiter")) T.delimiter else ' ';
     const indices = if (@hasDecl(T, "indices")) T.indices else rangeOfLength(std.meta.fields(T).len);
@@ -343,7 +345,7 @@ pub fn parseLineTo(comptime T: type, line: []const u8) !T {
     const type_info: std.builtin.Type = @typeInfo(T);
 
     switch (type_info) {
-        .Struct => {},
+        .@"struct" => {},
         else => return getParseFunction(T)(line),
     }
 
@@ -432,7 +434,7 @@ test "arbitrary struct parsing" {
         },
     };
 
-    var arr: [10]u8 = std.mem.zeroes([10]u8);
+    const arr: [10]u8 = std.mem.zeroes([10]u8);
     _ = arr;
 
     const result: ParseStruct = try parseLineTo(ParseStruct, toParse);
@@ -475,4 +477,16 @@ test "union(enum) parsing" {
 
     try std.testing.expectEqual(parsed1, U.noop);
     try std.testing.expectEqual(parsed2, U{ .addx = -11 });
+}
+
+test "fails parsing with non-pub indices" {
+    const toParse = "false;500";
+    const ParseStruct = struct {
+        b: bool,
+        i: i32,
+        const delimiter = ';';
+    };
+    const attemptParse = try parseLineTo(ParseStruct, toParse);
+    std.log.warn("{?} {?}", .{ attemptParse.b, attemptParse.i });
+    // try std.testing.expectError(expected_error: anyerror, actual_error_union: anytype)
 }

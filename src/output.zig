@@ -14,8 +14,8 @@ pub fn flush() !void {
 
 fn printPart(solution: anytype, part: i32) void {
     const specifier = comptime switch (@typeInfo(@TypeOf(solution))) {
-        .Array => "s",
-        .Optional => "any",
+        .array => "s",
+        .optional => "any",
         else => "",
     };
     print("Part {}: {" ++ specifier ++ "}\n", .{ part, solution });

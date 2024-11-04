@@ -1,7 +1,6 @@
 const std = @import("std");
 const input = @import("../input.zig");
 const output = @import("../output.zig");
-const abs = std.math.absInt;
 const sign = std.math.sign;
 
 const Dir = enum {
@@ -33,8 +32,8 @@ const Position = struct {
     pub fn dragOther(self: Self, other: Self) Self {
         // Assumes that movement has only progressed a single step, so can't be 2 away in more than one axis
         const distance = self.sub(other);
-        const far_x = abs(distance.x) catch unreachable >= 2;
-        const far_y = abs(distance.y) catch unreachable >= 2;
+        const far_x = @abs(distance.x) >= 2;
+        const far_y = @abs(distance.y) >= 2;
         const touching = !(far_x or far_y);
         if (touching) return other;
 
@@ -99,7 +98,7 @@ const N_KNOTS = 10;
 pub fn solve() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var arena = std.heap.ArenaAllocator.init(gpa.allocator());
-    var allocator = arena.allocator();
+    const allocator = arena.allocator();
     defer _ = arena.reset(.free_all);
 
     const ParseType = struct {

@@ -6,9 +6,8 @@ const NodeList = std.ArrayList(Node);
 const Allocator = std.mem.Allocator;
 
 const Node = union(enum) {
-    Directory: Directory,
-    File: File,
-
+    directory: Directory,
+    file: File,
     const Directory = struct {
         name: [20:0]u8,
         children: NodeList,
@@ -31,7 +30,7 @@ const Node = union(enum) {
         // std.log.err("fmt: {s}, options: {any}", .{ fmt, options });
         _ = options;
         switch (self) {
-            .Directory => |dir| {
+            .directory => |dir| {
                 try writer.print("{s}/\n", .{dir.name});
                 // try writer.print("cap: {any}\n", .{dir.children.capacity});
                 // std.log.err("{any}", .{dir.children.capacity});
@@ -39,7 +38,7 @@ const Node = union(enum) {
                     try writer.print("{any}", .{child});
                 }
             },
-            .File => |file| {
+            .file => |file| {
                 try writer.print("{s}: {} bytes\n", .{ file.name, file.filesize });
             },
         }
@@ -48,7 +47,7 @@ const Node = union(enum) {
 
 fn findFirstDir(l: *NodeList, name: []const u8) *Node.Directory {
     for (l.*.items) |*node| switch (node.*) {
-        .Directory => |*dir| {
+        .directory => |*dir| {
             if (std.mem.eql(u8, name, dir.*.name[0..name.len]))
                 return dir;
         },
@@ -73,14 +72,14 @@ fn ls(allocator: Allocator, current_dir: *Node.Directory, listed_line: []const u
     var node_name_owned = std.mem.zeroes([20:0]u8);
     @memcpy(node_name_owned[0..node_name.len], node_name);
     if (filesize_or_dir[0] == 'd') {
-        try current_dir.*.children.append(Node{ .Directory = .{
+        try current_dir.*.children.append(Node{ .directory = .{
             .name = node_name_owned,
             .parent = current_dir,
             .children = NodeList.init(allocator),
         } });
     } else {
         const filesize = input.parseLineTo(usize, filesize_or_dir) catch unreachable;
-        try current_dir.*.children.append(Node{ .File = .{
+        try current_dir.*.children.append(Node{ .file = .{
             .name = node_name_owned,
             .parent = current_dir,
             .filesize = filesize,
@@ -91,7 +90,7 @@ fn ls(allocator: Allocator, current_dir: *Node.Directory, listed_line: []const u
 fn total_size_accumulation(root: *const Node) struct { usize, usize } {
     // Returns the size of the directory, and the accumulator
     switch (root.*) {
-        .Directory => |*dir| {
+        .directory => |*dir| {
             var total_dir_size: usize = 0;
             var accumulator: usize = 0;
             for (dir.*.children.items) |*child_node| {
@@ -107,7 +106,7 @@ fn total_size_accumulation(root: *const Node) struct { usize, usize } {
                 accumulator,
             };
         },
-        .File => |*file| {
+        .file => |*file| {
             return .{
                 file.filesize,
                 0,
@@ -118,7 +117,7 @@ fn total_size_accumulation(root: *const Node) struct { usize, usize } {
 
 fn smallest_total_space_passing(root: *const Node, required_space: usize) struct { usize, usize } {
     switch (root.*) {
-        .Directory => |*dir| {
+        .directory => |*dir| {
             var smallest: usize = std.math.maxInt(usize);
             var total_size: usize = 0;
             for (dir.*.children.items) |*child_node| {
@@ -134,7 +133,7 @@ fn smallest_total_space_passing(root: *const Node, required_space: usize) struct
                 smallest,
             };
         },
-        .File => |*file| {
+        .file => |*file| {
             return .{
                 file.filesize,
                 std.math.maxInt(usize),
@@ -147,22 +146,22 @@ pub fn solve() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     var arena = std.heap.ArenaAllocator.init(gpa.allocator());
-    var allocator = arena.allocator();
+    const allocator = arena.allocator();
     defer _ = arena.reset(.free_all);
 
     var name = std.mem.zeroes([20:0]u8);
     name[0] = '/';
-    var root = Node{ .Directory = .{
+    var root = Node{ .directory = .{
         .name = name,
         .children = NodeList.init(allocator),
     } };
-    var current_dir = &root.Directory;
+    var current_dir = &root.directory;
     while (input.readLine(35)) |line| {
         // std.log.warn("{any}", .{Node{ .Directory = current_node.* }});
         // std.log.warn("Running command \"{s}\"", .{line});
         if (line[0] == '$') {
             if (line[2] == 'c') {
-                current_dir = cd(current_dir, line[5..], &root.Directory);
+                current_dir = cd(current_dir, line[5..], &root.directory);
             }
             // If not we are starting ls and don't need to do anything
         } else { // ls line

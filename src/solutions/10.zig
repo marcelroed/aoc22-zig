@@ -73,7 +73,7 @@ const Machine = struct {
         const pixel_i: usize = @intCast(@divFloor(cycle, @as(isize, 40)));
         const pixel_j: usize = @intCast(@mod(cycle, 40));
 
-        const colored = std.math.absCast(@as(u8, @intCast(pixel_j)) - self.*.X) <= 1;
+        const colored = @abs(@as(u8, @intCast(pixel_j)) - self.*.X) <= 1;
         const char: u8 = if (colored) '#' else '.';
 
         self.*.screen[pixel_i][pixel_j] = char;
@@ -99,7 +99,7 @@ const Machine = struct {
 
 pub fn solve() !void {
     var machine = Machine.init();
-    var score: i32 = 0;
+    const score: i32 = 0;
     _ = score;
     while (true) {
         machine.advance() catch |err| switch (err) {

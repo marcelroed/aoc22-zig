@@ -6,10 +6,10 @@ const solutions = @import("solutions.zig");
 const String = std.ArrayList(u8);
 const assert = std.debug.assert;
 
-pub var problem_number: u32 = 0;
+pub var problem_number: usize = 0;
 
 fn getAllSolutions() []*const fn () anyerror!void {
-    const decls = @typeInfo(solutions).Struct.decls;
+    const decls = @typeInfo(solutions).@"struct".decls;
     const n_decls = decls.len;
 
     var funcArr: [n_decls]*const fn () anyerror!void = undefined;
@@ -22,11 +22,19 @@ fn getAllSolutions() []*const fn () anyerror!void {
 
 fn getSolution(solution_number: ?u32) *const fn () anyerror!void {
     const all_functions = comptime getAllSolutions();
-    const solnum: u32 = solution_number orelse all_functions.len;
+    const solnum: usize = @intCast(solution_number orelse all_functions.len);
     output.print("Running solution number {}\n", .{solnum});
     output.flush() catch unreachable;
     problem_number = solnum;
-    return all_functions[solnum - 1];
+    // output.print("We have {} {} solutions\n", .{ all_functions.len, all_functions.ptr });
+    output.flush() catch unreachable;
+    inline for (0..all_functions.len) |i| {
+        if (i == solnum - 1) {
+            return all_functions[i];
+        }
+    }
+    return all_functions[all_functions.len - 1];
+    // return all_functions[solnum - 1];
 }
 
 fn runSolution(solution_number: ?u32) !void {

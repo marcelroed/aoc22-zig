@@ -75,22 +75,22 @@ pub fn solve() !void {
             const base_height = trees[i][j];
 
             var si = i;
-            var up = while (si > 0) {
+            const up = while (si > 0) {
                 si -= 1;
                 if (trees[si][j] >= base_height) break i - si;
             } else i;
 
-            var down = for ((i + 1)..height) |s| {
+            const down = for ((i + 1)..height) |s| {
                 if (trees[s][j] >= base_height) break s - i;
             } else height - i - 1;
 
             var sj = j;
-            var left = while (sj > 0) {
+            const left = while (sj > 0) {
                 sj -= 1;
                 if (trees[i][sj] >= base_height) break j - sj;
             } else j;
 
-            var right = for ((j + 1)..width) |s| {
+            const right = for ((j + 1)..width) |s| {
                 if (trees[i][s] >= base_height) break s - j;
             } else width - j - 1;
 
